@@ -17,7 +17,7 @@ A faithful and nostalgic implementation of the classic **Tetris**, inspired by t
 | Key | Action |
 | :--- | :--- |
 | **Enter** | Start / Restart Game |
-| **Esc** | Pause / Resume Match |
+| **Backspace** | Pause / Resume Match |
 | **Arrows ← / →** | Move piece laterally |
 | **Arrow ↑** | Rotate piece |
 | **Arrow ↓** | Soft Drop (Controlled descent) |
