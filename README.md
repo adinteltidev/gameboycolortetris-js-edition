@@ -25,6 +25,19 @@ A faithful and nostalgic implementation of the classic **Tetris**, inspired by t
 | **C** | For Credits |
 | **L** | For Language Change |
 
+### 🕹️ Touch screen
+
+| Key | Action |
+| :--- | :--- |
+| **Start** | Start / Restart Game |
+| **Back** | Pause / Resume Match |
+| **Arrows ← / →** | Move piece laterally |
+| **Arrow ↑** | Rotate piece |
+| **Arrow ↓** | Soft Drop (Controlled descent) |
+| **Hard** | Hard Drop (Instant descent) |
+| **Credits** | For Credits |
+| **Language** | For Language Change |
+
 ## 🛠️ Technologies Used
 
 * **HTML5 Canvas:** Low-latency graphical rendering for the grid and preview.
