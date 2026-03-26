@@ -8,22 +8,21 @@ const ROWS = 20;
 const BLOCK_SIZE = 30;
 
 const COLORS = {
-    bg: '#e0f8cf',       // Fundo da tela (esverdeado claro)
-    dark: '#20002c',     // Roxo profundo
-    light: '#ffffff',    // Branco
-    midDark: '#5b0060',  // Roxo médio
-    midLight: '#a800a0'  // Magenta
+    bg: '#e0f8cf',
+    dark: '#20002c',
+    light: '#ffffff',
+    midDark: '#5b0060',
+    midLight: '#a800a0'
 };
 
-// Cores clássicas do Tetris para GBC
 const PIECE_COLORS = {
-    'I': '#00f0f0', // Ciano
-    'O': '#f0f000', // Amarelo
-    'T': '#a000f0', // Roxo
-    'S': '#00f000', // Verde
-    'Z': '#f00000', // Vermelho
-    'J': '#0000f0', // Azul
-    'L': '#f0a000'  // Laranja
+    'I': '#00f0f0',
+    'O': '#f0f000',
+    'T': '#a000f0',
+    'S': '#00f000',
+    'Z': '#f00000',
+    'J': '#0000f0',
+    'L': '#f0a000'
 };
 
 const TETROMINOS = {
@@ -57,6 +56,7 @@ let gameState = {
     musicEnabled: true,
     currentNoteIndex: 0,
     nextNoteTime: 0,
+    showingCredits: false
 };
 
 let keys = {
@@ -469,8 +469,8 @@ function startGame() {
         nextNoteTime: 0,
     };
 
-    updateDisplay();
     updateMainLabels();
+    updateDisplay();
     hideAllScreens();
     spawnPiece();
     requestAnimationFrame(update);
@@ -491,6 +491,7 @@ function showStartScreen() {
     document.getElementById('startScreen').classList.remove('hidden');
     document.getElementById('gameOverScreen').classList.add('hidden');
     document.getElementById('overlay').classList.remove('hidden');
+    updateMainLabels();
 }
 
 function showPauseScreen() {
@@ -506,6 +507,8 @@ function hidePauseScreen() {
 }
 
 function togglePause() {
+    if (!gameState.gameStarted || gameState.gameOver) return;
+
     gameState.paused = !gameState.paused;
     if (gameState.paused) {
         gameState.menuIndex = 0;
@@ -513,16 +516,18 @@ function togglePause() {
         updateMenuUI();
     } else {
         hidePauseScreen();
-        gameState.lastTime = 0;
+        gameState.lastTime = performance.now();
         requestAnimationFrame(update);
     }
 }
+
 function hideAllScreens() {
     document.getElementById('startScreen').classList.add('hidden');
     document.getElementById('gameOverScreen').classList.add('hidden');
     document.getElementById('pauseScreen').classList.add('hidden');
     document.getElementById('overlay').classList.add('hidden');
     document.getElementById('creditsScreen').classList.add('hidden');
+    gameState.showingCredits = false;
 }
 
 function updateMenuUI() {
@@ -540,7 +545,7 @@ function updateMenuUI() {
     document.getElementById('txt-esc-resume').textContent = translations[lang].esc;
 }
 
-function updateMainLabels() {
+function updateMainLabels(isShowingCredits = false) {
     const lang = gameState.language;
     const labels = document.querySelectorAll('.info-box .label');
     
@@ -569,10 +574,25 @@ function updateMainLabels() {
     document.getElementById('thanks2').textContent = translations[lang].thanks2;
     document.getElementById('thanks3').textContent = translations[lang].thanks3;
     document.getElementById('creditsReturn').textContent = translations[lang].creditsReturn;
-}
 
-function translateStartScreen(){
+    const btnBack = document.getElementById('touch-back');
+    const btnHard = document.getElementById('touch-hard');
+    const btnStart = document.getElementById('touch-pause');
 
+    if (btnBack && btnHard) {
+        if (gameState.showingCredits) {
+            btnBack.textContent = 'Back'; 
+            btnHard.textContent = '';
+            btnStart.textContent = '';
+        } else if (!gameState.gameStarted && !gameState.gameOver) {
+            btnBack.textContent = translations[lang].credits;
+            btnHard.textContent = translations[lang].lang;
+            btnStart.textContent = 'START';
+        } else {
+            btnBack.textContent = 'BACK';
+            btnHard.textContent = 'HARD';
+        }
+    }
 }
 
 function executeMenuOption() {
@@ -623,20 +643,119 @@ function playMusicStep(time) {
 
 function showCredits() {
     hideAllScreens();
+    gameState.showingCredits = true;
     document.getElementById('creditsScreen').classList.remove('hidden');
     document.getElementById('overlay').classList.remove('hidden');
+    updateMainLabels();
+}
+
+function hideCredits() {
+    gameState.showingCredits = false;
+    document.getElementById('creditsScreen').classList.add('hidden');
+    showStartScreen();
+    updateMainLabels();
 }
 
 function resetToInitialScreen() {
+    resetGameContext();
+    hideAllScreens();
+    showStartScreen();
+    updateMainLabels();
+}
+
+function setupTouchControls() {
+    const mapTouch = (id, action) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+
+            if (gameState.showingCredits) {
+                if (id === 'touch-back') {
+                    hideCredits();
+                }
+                return;
+            }
+
+            if (!gameState.gameStarted && !gameState.gameOver) {
+                if (id === 'touch-back') {
+                    showCredits();
+                    return;
+                }
+                if (id === 'touch-hard') {
+                    gameState.language = gameState.language === 'EN' ? 'PT' : 'EN';
+                    updateMainLabels();
+                    return;
+                }
+                if (id === 'touch-pause') {
+                    startGame();
+                    return;
+                }
+                return;
+            }
+
+            if (gameState.paused) {
+                if (id === 'touch-up') {
+                    gameState.menuIndex = (gameState.menuIndex - 1 + 3) % 3;
+                    updateMenuUI();
+                } else if (id === 'touch-down') {
+                    gameState.menuIndex = (gameState.menuIndex + 1) % 3;
+                    updateMenuUI();
+                } else if (id === 'touch-pause' || id === 'touch-hard' || id === 'touch-back') {
+                    executeMenuOption();
+                }
+                return;
+            }
+
+            if (gameState.gameOver) {
+                if (id === 'touch-pause') {
+                    startGame();
+                } else if (id === 'touch-back') {
+                    resetToInitialScreen();
+                }
+                return;
+            }
+
+            if (gameState.gameStarted && !gameState.gameOver) {
+                if (id === 'touch-pause') {
+                    togglePause();
+                } else if (id === 'touch-back') {
+                    togglePause();
+                } else {
+                    action();
+                }
+            }
+        }, { passive: false });
+    };
+
+    mapTouch('touch-left', moveLeft);
+    mapTouch('touch-right', moveRight);
+    mapTouch('touch-up', rotatePiece);
+    mapTouch('touch-down', () => { 
+        if (!gameState.paused) {
+            drop(); 
+            gameState.score += 1; 
+            updateDisplay(); 
+        }
+    });
+    mapTouch('touch-hard', hardDrop);
+    mapTouch('touch-pause', togglePause);
+    mapTouch('touch-back', null); 
+}
+
+function resetGameContext() {
+    gameState.score = 0;
+    gameState.level = 1;
+    gameState.lines = 0;
     gameState.gameStarted = false;
     gameState.gameOver = false;
     gameState.paused = false;
+
+    updateDisplay();
     
-    gameState.grid = createGrid(); 
-    draw(); 
-    
-    hideAllScreens();
-    showStartScreen();
+    nextCtx.fillStyle = COLORS.bg;
+    nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
 }
 
 document.addEventListener('keydown', (e) => {
@@ -753,4 +872,7 @@ ctx.fillStyle = COLORS.bg;
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 nextCtx.fillStyle = COLORS.bg;
 nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+
+setupTouchControls();
+updateMainLabels();
 showStartScreen();
